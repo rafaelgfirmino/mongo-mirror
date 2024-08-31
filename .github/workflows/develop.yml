@@ -28,11 +28,31 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.go-version }}
 
-      - name: Generate Binary file
+      - name: Determine GOOS and GOARCH
+        id: set-env
         run: |
-          GOOS=$(echo ${{ matrix.os }} | sed 's/ubuntu/linux/' | sed 's/windows/windows/' | sed 's/macos/darwin/') \
-          GOARCH=${{ matrix.arch }} \
-          go build -o app-${{ matrix.os }}-${{ matrix.arch }} ./...
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            echo "GOOS=linux" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "GOOS=windows" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "GOOS=darwin" >> $GITHUB_ENV
+          fi
+
+          if [[ "${{ matrix.arch }}" == "amd64" ]]; then
+            echo "GOARCH=amd64" >> $GITHUB_ENV
+          elif [[ "${{ matrix.arch }}" == "arm64" ]]; then
+            echo "GOARCH=arm64" >> $GITHUB_ENV
+          fi
+
+      - name: Skip unsupported combinations
+        if: ${{ (env.GOOS == 'windows' && env.GOARCH == 'arm64') || (env.GOOS == 'darwin' && env.GOARCH == 'arm64') }}
+        run: |
+          echo "Skipping unsupported GOOS/GOARCH pair: $GOOS/$GOARCH"
+          exit 0
+
+      - name: Generate Binary file
+        run: go build -o app-${{ env.GOOS }}-${{ env.GOARCH }} ./...
 
       - name: Runing tests
         run: go test ./...
