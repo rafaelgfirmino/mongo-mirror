@@ -115,22 +115,24 @@ func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Curs
 	if err := convertUUIDs(filter); err != nil {
 		log.Fatalf("Failed to convert UUIDs in filter for collection %s: %v", collection.Name, err)
 	}
-	count, err := sourceCollection.CountDocuments(ctx, filter)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	fmt.Printf("Total documents imported: %d\n", count)
-	var findOptions *options.FindOptions
-
+	findOptions := options.Find() // Ajuste o tamanho do lote conforme necessário
+	countOptions := options.Count()
 	if collection.BatchSize != "all" {
 		i, err := strconv.Atoi(collection.BatchSize)
 		if err != nil {
 			log.Fatal("BatchSize must be a number or 'all'")
 			panic(err)
 		}
-		findOptions.SetBatchSize(int32(i))
+		findOptions.SetLimit(int64(i))
+		countOptions.SetLimit(int64(i))
 	}
+	count, err := sourceCollection.CountDocuments(ctx, filter, countOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Collection %s has %d documents to be imported\n", collection.Name, count)
 	cursor, err := sourceCollection.Find(ctx, filter, findOptions)
 
 	if err != nil {
@@ -145,6 +147,7 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 
 	var documents []interface{}
 	var copiedCount int64
+
 	if collection.Upsert {
 		for cursor.Next(ctx) {
 			var document bson.M
@@ -160,7 +163,8 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			copiedCount += int64(len(documents))
+
+			copiedCount += 1
 		}
 	} else {
 		if err := cursor.All(ctx, &documents); err != nil {
@@ -172,10 +176,11 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			copiedCount += int64(len(documents))
 		}
 	}
 
-	fmt.Printf("Collection %s imported successfully!", collection.Name)
+	fmt.Printf("Collection %s imported successfully! Total: %d", collection.Name, copiedCount)
 }
 
 func uuidToBinary(u string) (primitive.Binary, error) {
