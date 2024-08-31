@@ -38,18 +38,19 @@ jobs:
           GOARCH=${{ matrix.arch }}
           go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-          body: |
-            Release notes for version ${{ github.ref_name }}.
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh
+
+      - name: Authenticate GitHub CLI
+        run: gh auth setup-git
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
 
+      - name: Create GitHub Release
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --title "Release ${{ github.ref_name }}" \
+            --notes "Release notes for version ${{ github.ref_name }}."
 
       - name: Upload Release Assets
         if: ${{ steps.create_release.outputs.upload_url }}
