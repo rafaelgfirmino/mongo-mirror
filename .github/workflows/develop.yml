@@ -34,17 +34,21 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.go-version }}
 
-      - name: Run Linux Build
-        if: matrix.os == 'ubuntu-latest'
-        run: go build -o mongo-mirror ./cmd/...
-
-      - name: Run Mac Build
-        if: matrix.os == 'macos-latest'
-        run: go build -o mongo-mirror ./cmd/...
-
-      - name: Run Windows Build
-        if: matrix.os == 'windows-latest'
-        run: go build -o mongo-mirror ./cmd/...
+      - name: Run Build
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-latest)
+              GOOS=linux
+              ;;
+            macos-latest)
+              GOOS=darwin
+              ;;
+            windows-latest)
+              GOOS=windows
+              ;;
+          esac
+          GOARCH=${{ matrix.arch }}
+          go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
 
 
       - name: Runing tests
