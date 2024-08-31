@@ -10,8 +10,14 @@ jobs:
     strategy:
       matrix:
         go-version: [1.22, 1.23]
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [amd64, arm64]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            release_suffix: ubuntu
+          - os: macos-latest
+            release_suffix: mac
+          - os: windows-latest
+            release_suffix: windows
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -28,31 +34,18 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.go-version }}
 
-      - name: Determine GOOS and GOARCH
-        id: set-env
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            echo "GOOS=linux" >> $GITHUB_ENV
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "GOOS=windows" >> $GITHUB_ENV
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            echo "GOOS=darwin" >> $GITHUB_ENV
-          fi
+      - name: Run Linux Build
+        if: matrix.os == 'ubuntu-latest'
+        run: echo "Ubuntu Latest" > release_ubuntu
 
-          if [[ "${{ matrix.arch }}" == "amd64" ]]; then
-            echo "GOARCH=amd64" >> $GITHUB_ENV
-          elif [[ "${{ matrix.arch }}" == "arm64" ]]; then
-            echo "GOARCH=arm64" >> $GITHUB_ENV
-          fi
+      - name: Run Mac Build
+        if: matrix.os == 'macos-latest'
+        run: echo "MacOS Latest" > release_mac
 
-      - name: Skip unsupported combinations
-        if: ${{ (env.GOOS == 'windows' && env.GOARCH == 'arm64') || (env.GOOS == 'darwin' && env.GOARCH == 'arm64') }}
-        run: |
-          echo "Skipping unsupported GOOS/GOARCH pair: $GOOS/$GOARCH"
-          exit 0
+      - name: Run Windows Build
+        if: matrix.os == 'windows-latest'
+        run: echo "Windows Latest" > release_windows
 
-      - name: Generate Binary file
-        run: go build -o app-${{ env.GOOS }}-${{ env.GOARCH }} ./...
 
       - name: Runing tests
         run: go test ./...
