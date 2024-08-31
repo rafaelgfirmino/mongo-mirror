@@ -104,7 +104,7 @@ func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Curs
 	sourceCollection := db.SourceClient.Connection.Database(db.SourceClient.Database).Collection(collection.Name)
 
 	if collection.MultiTenant != false && len(db.Tenants) > 0 {
-		collection.Filter = fmt.Sprintf(`{"tenant": {"$in": %s}}`, strings.Join(db.Tenants, ","))
+		collection.Filter = fmt.Sprintf(`{"TenantId": {"$in": ["%s"]}}`, strings.Join(db.Tenants, `","`))
 	}
 
 	var filter bson.M
@@ -193,18 +193,38 @@ func uuidToBinary(u string) (primitive.Binary, error) {
 		Data:    id[:],
 	}, nil
 }
+
 func convertUUIDs(filter bson.M) error {
 	for key, value := range filter {
-		if str, ok := value.(string); ok && strings.Contains(str, "-") {
-			if binary, err := uuidToBinary(str); err == nil {
-				filter[key] = binary
-			} else {
+		switch v := value.(type) {
+		case string:
+			if strings.Contains(v, "-") {
+				if binary, err := uuidToBinary(v); err == nil {
+					filter[key] = binary
+				} else {
+					return err
+				}
+			}
+		case []interface{}:
+			for i, item := range v {
+				if str, ok := item.(string); ok && strings.Contains(str, "-") {
+					if binary, err := uuidToBinary(str); err == nil {
+						v[i] = binary
+					} else {
+						return err
+					}
+				}
+			}
+		case bson.M:
+			if err := convertUUIDs(v); err != nil {
 				return err
 			}
-		} else if subFilter, ok := value.(bson.M); ok {
-			if err := convertUUIDs(subFilter); err != nil {
+		case map[string]interface{}:
+			if err := convertUUIDs(bson.M(v)); err != nil {
 				return err
 			}
+		default:
+			continue
 		}
 	}
 	return nil
