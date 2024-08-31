@@ -23,7 +23,9 @@ jobs:
 
       - name: Build binary
         run: |
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o app-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
+          GOOS=$(echo ${{ matrix.os }} | sed 's/ubuntu/linux/' | sed 's/windows/windows/' | sed 's/macos/darwin/') \
+          GOARCH=${{ matrix.arch }} \
+          go build -o app-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
 
       - name: Create GitHub Release
         id: create_release
