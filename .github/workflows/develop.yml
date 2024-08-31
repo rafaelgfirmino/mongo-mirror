@@ -1,0 +1,43 @@
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.22, 1.23]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Restore Go test cache
+        id: cache-go-test
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.go-version }}
+
+      - name: Generate Binary file
+        run: go build ./...
+      - name: Runing tests
+        run: go test ./...
+        
+      - name: Save Go test cache
+        if: always()
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('**/*.go') }}-${{ matrix.go-version }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.go-version }}

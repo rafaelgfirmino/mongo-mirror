@@ -1,0 +1,18 @@
+config:
+  source:
+    connectionString:
+    database:
+  destiny:
+    connectionString:
+    database:
+  tenants:
+    -
+collections:
+  - name:
+    batchSize: "all"
+    upsert:
+    multiTenant:
+    filter: |
+      {
+      
+      }
