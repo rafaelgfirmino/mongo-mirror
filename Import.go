@@ -110,9 +110,12 @@ func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Curs
 		}
 	}
 
-	if err := json.Unmarshal([]byte(collection.Filter), &filter); err != nil {
-		log.Fatal(err)
+	if collection.Filter != "" {
+		if err := json.Unmarshal([]byte(collection.Filter), &filter); err != nil {
+			log.Fatal(err)
+		}
 	}
+
 	fmt.Println(filter)
 
 	if err := convertUUIDs(filter); err != nil {
