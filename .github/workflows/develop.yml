@@ -50,7 +50,6 @@ jobs:
           GOARCH=${{ matrix.arch }}
           go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
 
-
       - name: Runing tests
         run: go test ./...
         
