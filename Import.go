@@ -116,8 +116,6 @@ func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Curs
 		}
 	}
 
-	fmt.Println(filter)
-
 	if err := convertUUIDs(filter); err != nil {
 		log.Fatalf("Failed to convert UUIDs in filter for collection %s: %v", collection.Name, err)
 	}
