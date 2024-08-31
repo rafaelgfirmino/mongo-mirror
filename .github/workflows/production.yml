@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.22, 1.23]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        go-version: [1.23]
+        os: [windows-latest, macos-latest]
         arch: [amd64, arm64]
     steps:
       - name: Check out the repository
@@ -22,23 +22,13 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Run Build
+      - name: Build Go binaries
         run: |
-          case "${{ matrix.os }}" in
-            ubuntu-latest)
-              GOOS=linux
-              ;;
-            macos-latest)
-              GOOS=darwin
-              ;;
-            windows-latest)
-              GOOS=windows
-              ;;
-          esac
-          GOARCH=${{ matrix.arch }}
-          go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
-
-      - name: Create Release
+          mkdir -p output
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }}
+        
+          
+          - name: Create Release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           token: ${{ secrets.GITHUBTOKEN }}
