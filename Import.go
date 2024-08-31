@@ -84,7 +84,7 @@ func connectDb(ctx context.Context, connectionString string, direction Direction
 		return nil, fmt.Errorf("failed to ping MongoDB -> %s: \n %s", direction, err)
 	}
 
-	log.Printf("Successfully connected to MongoDB! %s", direction)
+	log.Printf("Successfully connected to MongoDB! %s \n", direction)
 	return source, nil
 }
 
@@ -102,15 +102,18 @@ func (m *Mirror) LoadCollections(ctx context.Context) {
 
 func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Cursor {
 	sourceCollection := db.SourceClient.Connection.Database(db.SourceClient.Database).Collection(collection.Name)
-
+	var filter bson.M
 	if collection.MultiTenant != false && len(db.Tenants) > 0 {
-		collection.Filter = fmt.Sprintf(`{"TenantId": {"$in": ["%s"]}}`, strings.Join(db.Tenants, `","`))
+		filterTenant := []byte(fmt.Sprintf(`{"TenantId": {"$in": ["%s"]}}`, strings.Join(db.Tenants, `","`)))
+		if err := json.Unmarshal(filterTenant, &filter); err != nil {
+			log.Fatalf("Error unmarshalling json1: %v", err)
+		}
 	}
 
-	var filter bson.M
 	if err := json.Unmarshal([]byte(collection.Filter), &filter); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println(filter)
 
 	if err := convertUUIDs(filter); err != nil {
 		log.Fatalf("Failed to convert UUIDs in filter for collection %s: %v", collection.Name, err)
@@ -180,7 +183,7 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 		}
 	}
 
-	fmt.Printf("Collection %s imported successfully! Total: %d", collection.Name, copiedCount)
+	fmt.Printf("Collection %s imported successfully! Total: %d \n", collection.Name, copiedCount)
 }
 
 func uuidToBinary(u string) (primitive.Binary, error) {
