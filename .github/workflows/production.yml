@@ -38,14 +38,6 @@ jobs:
           GOARCH=${{ matrix.arch }}
           go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
 
-  release:
-    name: Release
-    needs: changelog
-    if: github.event_name != 'pull_request' && needs.changelog.outputs.skipped == 'false'
-    runs-on: ubuntu-latest
-
-    steps:
-
       - name: Create Release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
