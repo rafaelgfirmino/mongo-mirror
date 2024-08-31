@@ -28,7 +28,7 @@ jobs:
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -o ./output/mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           token: ${{ secrets.GITHUBTOKEN }}
           tag_name: ${{ needs.changelog.outputs.tag }}
