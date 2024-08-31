@@ -49,7 +49,7 @@ jobs:
           body: |
             Release notes for version ${{ github.ref_name }}.
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
 
       - name: Upload Release Assets
         if: ${{ steps.create_release.outputs.upload_url }}
