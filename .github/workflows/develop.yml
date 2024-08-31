@@ -10,6 +10,14 @@ jobs:
     strategy:
       matrix:
         go-version: [1.22, 1.23]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            release_suffix: ubuntu
+          - os: macos-latest
+            release_suffix: mac
+          - os: windows-latest
+            release_suffix: windows
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,8 +34,22 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.go-version }}
 
-      - name: Generate Binary file
-        run: go build ./...
+      - name: Run Build
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-latest)
+              GOOS=linux
+              ;;
+            macos-latest)
+              GOOS=darwin
+              ;;
+            windows-latest)
+              GOOS=windows
+              ;;
+          esac
+          GOARCH=${{ matrix.arch }}
+          go build -o mongo-mirror-${{ matrix.os }}-${{ matrix.arch }} ./cmd/...
+
       - name: Runing tests
         run: go test ./...
         

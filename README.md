@@ -1,5 +1,13 @@
 # mongo-mirror
 Simple tool to mirror data from one MongoDB to another MongoDB
+
+```bash
+  # macOS usage example
+  xattr -d com.apple.quarantine mongo-mirror-darwin-amd64
+  chmod +x mongo-mirror-darwin-amd64
+  ./mongo-mirror-darwin-amd64 i -f config.yaml
+```
+
 ```yaml
 config:
   source:
