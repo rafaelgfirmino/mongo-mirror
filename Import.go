@@ -60,7 +60,7 @@ func (m *Mirror) LoadConfig(ctx context.Context) {
 
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-		m.Configs.DestinyClient.Connection, err = connectDb(ctx, m.Configs.SourceClient.ConnectionString, Destiny)
+		m.Configs.DestinyClient.Connection, err = connectDb(ctx, m.Configs.DestinyClient.ConnectionString, Destiny)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -68,6 +68,7 @@ func (m *Mirror) LoadConfig(ctx context.Context) {
 	wg.Wait()
 }
 func connectDb(ctx context.Context, connectionString string, direction Direction) (*mongo.Client, error) {
+	fmt.Println(direction, connectionString)
 	if direction == Destiny && strings.Contains(connectionString, "mongodb.net") {
 		panic("You can't connect to a mongodb atlas, the destiny database can't be a production database.")
 	}
