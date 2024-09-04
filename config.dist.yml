@@ -5,6 +5,7 @@ config:
   destiny:
     connectionString:
     database:
+  timeout: //default 60 seconds
   tenants:
     -
 collections:

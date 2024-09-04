@@ -33,20 +33,22 @@ type Config struct {
 	SourceClient  MongoConfig `yaml:"source"`
 	DestinyClient MongoConfig `yaml:"destiny"`
 	Tenants       []string    `yaml:"tenants"`
+	Timeout       int         `yaml:"timeout"`
 }
 type Collection struct {
 	Name        string `yaml:"name"`
 	BatchSize   string `yaml:"batchSize"`
-	MultiTenant bool   `yaml:"multiTenant"`
+	MultiTenant string `yaml:"multiTenant"`
 	Filter      string `yaml:"filter"`
-	Upsert      bool   `yaml:"upsert"`
+	Upsert      string `yaml:"upsert"`
 }
 type Mirror struct {
 	Configs     Config       `yaml:"config"`
 	Collections []Collection `yaml:"collections"`
 }
 
-func (m *Mirror) LoadConfig(ctx context.Context) {
+func (m *Mirror) LoadConfig() {
+	ctx := context.Context(context.Background())
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	var err error
@@ -78,7 +80,7 @@ func connectDb(ctx context.Context, connectionString string, direction Direction
 		log.Fatal(err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	if err := source.Ping(ctx, nil); err != nil {
@@ -89,22 +91,27 @@ func connectDb(ctx context.Context, connectionString string, direction Direction
 	return source, nil
 }
 
-func (m *Mirror) LoadCollections(ctx context.Context) {
-	wg := sync.WaitGroup{}
-	for _, collection := range m.Collections {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			dbDestiny(ctx, m.Configs, collection)
-		}()
+func (m *Mirror) LoadCollections() {
+	if m.Configs.Timeout == 0 {
+		m.Configs.Timeout = 60
 	}
-	wg.Wait()
+	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), time.Duration(m.Configs.Timeout)*time.Second)
+	defer cancel()
+
+	for _, collection := range m.Collections {
+		fmt.Printf("--------------------------Starting collection %s-------------------------- \n", collection.Name)
+		dbDestiny(ctxWithTimeout, m.Configs, collection)
+		fmt.Printf("--------------------------Finished import collection %s-------------------------- \n\n", collection.Name)
+	}
 }
 
 func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Cursor {
 	sourceCollection := db.SourceClient.Connection.Database(db.SourceClient.Database).Collection(collection.Name)
 	var filter bson.M
-	if collection.MultiTenant != false && len(db.Tenants) > 0 {
+	if collection.MultiTenant == "" {
+		collection.MultiTenant = "true"
+	}
+	if collection.MultiTenant == "true" && len(db.Tenants) > 0 {
 		filterTenant := []byte(fmt.Sprintf(`{"TenantId": {"$in": ["%s"]}}`, strings.Join(db.Tenants, `","`)))
 		if err := json.Unmarshal(filterTenant, &filter); err != nil {
 			log.Fatalf("Error unmarshalling json1: %v", err)
@@ -123,6 +130,11 @@ func dbSource(ctx context.Context, db Config, collection Collection) *mongo.Curs
 
 	findOptions := options.Find() // Ajuste o tamanho do lote conforme necessário
 	countOptions := options.Count()
+
+	if collection.BatchSize == "" {
+		collection.BatchSize = "all"
+	}
+
 	if collection.BatchSize != "all" {
 		i, err := strconv.Atoi(collection.BatchSize)
 		if err != nil {
@@ -153,7 +165,7 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 	var documents []interface{}
 	var copiedCount int64
 
-	if collection.Upsert {
+	if collection.Upsert == "true" || collection.Upsert == "" {
 		for cursor.Next(ctx) {
 			var document bson.M
 			if err := cursor.Decode(&document); err != nil {

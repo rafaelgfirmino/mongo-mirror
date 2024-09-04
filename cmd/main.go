@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/educbank/mongo-mirror"
 	"github.com/urfave/cli/v2"
@@ -31,9 +29,6 @@ func main() {
 				Action: func(cCtx *cli.Context) error {
 					filePath := cCtx.String("file")
 					fmt.Printf("Config File: %s", filePath)
-					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-					defer cancel()
-
 					var mirror mongoSync.Mirror
 					data, err := os.ReadFile(filePath)
 					if err != nil {
@@ -43,8 +38,8 @@ func main() {
 					if err != nil {
 						log.Fatal(err)
 					}
-					mirror.LoadConfig(ctx)
-					mirror.LoadCollections(ctx)
+					mirror.LoadConfig()
+					mirror.LoadCollections()
 					return nil
 				},
 			},
