@@ -172,9 +172,9 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 			if err := cursor.Decode(&document); err != nil {
 				log.Fatal(err)
 			}
-			//if document["TenantId"] == nil && !tenantDestiny.IsZero() {
-			document["TenantId"] = tenantDestiny
-			//}
+			if document["TenantId"] == nil && !tenantDestiny.IsZero() {
+				document["TenantId"] = tenantDestiny
+			}
 			_, err := destinyCollection.UpdateOne(
 				ctx,
 				bson.M{"_id": document["_id"]}, // Filtro baseado no ID do documento
