@@ -20,6 +20,7 @@ config:
   tenants:
     - "3a0dbbaa-35b4-c4fd-d0e4-0d08ef38bea3" #multiTenant use TenantId property
     - "7051fc14-0ad0-4fb1-c679-39ff7ec38024"
+  tenantDestiny: "3a0dbbaa-35b4-c4fd-d0e4-0d08ef38bea3" #convert all documents to this TenantId
 collections:
   - name: "Invoices" # Collection you want to mirror
     batchSize: "all" # Number of documents to be imported | default: "all"
