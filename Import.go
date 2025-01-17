@@ -33,7 +33,7 @@ type Config struct {
 	SourceClient  MongoConfig `yaml:"source"`
 	DestinyClient MongoConfig `yaml:"destiny"`
 	Tenants       []string    `yaml:"tenants"`
-	TenantDesity  string      `yaml:"tenantDestiny"`
+	TenantDestiny string      `yaml:"tenantDestiny"`
 	Timeout       int         `yaml:"timeout"`
 }
 type Collection struct {
@@ -165,14 +165,14 @@ func dbDestiny(ctx context.Context, db Config, collection Collection) {
 
 	var documents []interface{}
 	var copiedCount int64
-	tenantDestiny, _ := uuidToBinary(db.TenantDesity)
+	tenantDestiny, _ := uuidToBinary(db.TenantDestiny)
 	if collection.Upsert == "true" || collection.Upsert == "" {
 		for cursor.Next(ctx) {
 			var document bson.M
 			if err := cursor.Decode(&document); err != nil {
 				log.Fatal(err)
 			}
-			if document["TenantId"] == nil && !tenantDestiny.IsZero() {
+			if !tenantDestiny.IsZero() {
 				document["TenantId"] = tenantDestiny
 			}
 			_, err := destinyCollection.UpdateOne(
